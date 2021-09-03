@@ -1,8 +1,13 @@
-# import requests
-from requests import NullHandler
+import jsonutil
 from requests_html import HTMLSession
+from datetime import date
 
+# flyer page url
 URL =  'https://corporate.shengsiong.com.sg/category/promotions/'
+# company id
+COM_ID = 'ss'
+# list of promo title to match and ignore the rest
+FILTER_TITLE = ['special', 'fair']
 
 DBG_FILENAME = 'index.html'
 DBG_FILENAME2 = 'index1.html'
@@ -17,7 +22,8 @@ def fromFile(filename):
         content = f.read()
     return content
 
-def parsePromoPage(response):
+
+def parsePromoPage(response, past_url_list):
 # <div class="wp-block-image">
 #     <figure class="aligncenter size-large">
 #         <img alt="" data-src="https://shengsiongcontent.s3.ap-southeast-1.amazonaws.com/wp-content/uploads/2021/07/12174027/7M21Booklet-F-02-1024x727.jpg" class="wp-image-6395 lazyloaded" src="https://shengsiongcontent.s3.ap-southeast-1.amazonaws.com/wp-content/uploads/2021/07/12174027/7M21Booklet-F-02-1024x727.jpg">
@@ -26,9 +32,12 @@ def parsePromoPage(response):
 #             </noscript>
 #         </figure>
 #     </div>
+    promo_page_dict = {}
+    img_url_list = []
+
     try:
 
-        print(response.html.find('title', first=True).text)
+        title = response.html.find('title', first=True).text
 
         main = response.html.find('.td-ss-main-content')
         if main:    
@@ -38,17 +47,22 @@ def parsePromoPage(response):
             for block in blocks:
                 images = block.xpath('//img')
                 # only interested in last link
-                link = images[-1]
-                if link:
-                    print(link.attrs['src'])
-            
+                image = images[-1]
+                if image:
+                    img_url_list.append(image.attrs['src'])
+
+        # add to dictionary with format {title:[img_urls]}
+        promo_page_dict[title] = img_url_list
 
     except Exception as ex:
         print('Exception in parsing promo page')
         print(str(ex))
+    
+    return promo_page_dict
+
 
 def parseMainPage(response):
-    promos_dict = {}
+    promo_pages_list = []
 
 # <div class="td-block-span4">
 #     <div class="td_module_1 td_module_wrap td-animation-stack">
@@ -75,51 +89,70 @@ def parseMainPage(response):
 
     try:
 
-        print(response.html.find('title', first=True).text)
+        # print(response.html.find('title', first=True).text)
         
         main = response.html.find('.td-ss-main-content')
         if main:    
             # expect only 1 main frame
             promos = main[0].xpath('//div[@class="td-block-span4"]')
-            # get all the promos
+            # get all the promo pages
             for promo in promos:
-                links = promo.find('a')
                 # only interested in last link
-                link = links[-1]
-                if link:
-                    # add to dictionary with format {title:link}
-                    promos_dict[link.text] = link.attrs['href']
+                link = promo.find('a')[-1]
+                # filter uninterested page
+                for keyword in FILTER_TITLE:
+                    if keyword in link.text.lower():
+                        promo_pages_list.append(link.attrs['href'])
 
     except Exception as ex:
         print('Exception in parsing main page')
         raise ex
-    
-    return promos_dict
 
-def main():
+    return promo_pages_list
+
+
+
+def getSSPromos():
 
     session = None
+    json_data = None
 
     try:
         session = HTMLSession()
         response = session.get(DBG_URL)
+
+        promo_list = []
+        past_url_list = []
         
         # toFile(DBG_FILENAME, req.content)
         # content = fromFile(DBG_FILENAME)
-        # allpromos = parseMainPage(response)
 
-        # for key in allpromos:
+        # retrieve last broadcasted data
+        # past_data_list = getSSDict()
+        past_url_list = jsonutil.readLastUrl(COM_ID)
+
+        promo_pages = parseMainPage(response)
+        for page_url in promo_pages:
             # print(key + ':  ' + allpromos[key])
-            # response = session.get(allpromos[key])
+            response = session.get(page_url)
+            promo_list.append(parsePromoPage(response, past_url_list))
 
         # toFile(DBG_FILENAME2, response.content)
-        parsePromoPage(response)
+        # promo = parsePromoPage(response)      
+        # promo_list.append(promo)
+
+        # promo_list = [{'page1': ['url1', 'url2']}, {'page2' : ['url1', 'url2']}]
+
+        # save data to prevent re-broadcast if promo has not been updated
+        jsonutil.saveTodayUrl(date.today(), COM_ID, promo_list)
 
     except Exception as ex:
         print(str(ex))
     finally:
         if session:
             session.close()
+            
+    return promo_list
 
 if __name__ == "__main__":
-    main()
+    getSSPromos()
