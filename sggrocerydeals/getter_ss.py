@@ -14,6 +14,7 @@ DBG_FILENAME2 = 'index1.html'
 DBG_URL = 'http://localhost:80/'
 
 def toFile(filename, content):
+    filename = jsonutil.WORKING_DIR + filename
     with open(filename, 'wb') as f:
         f.write(content)
 
@@ -39,10 +40,11 @@ def parsePromoPage(response, past_url_list):
 
         title = response.html.find('title', first=True).text
 
-        main = response.html.find('.td-ss-main-content')
+        # expect only 1 main frame
+        main = response.html.find('.td-ss-main-content', first=True)
         if main:    
-            # expect only 1 main frame
-            blocks = main[0].xpath('//div[@class="wp-block-image"]')
+            # locate image container
+            blocks = main.xpath('//div[@class="wp-block-image"]')
             # get all the promo image
             for block in blocks:
                 images = block.xpath('//img')
@@ -51,8 +53,11 @@ def parsePromoPage(response, past_url_list):
                 if image:
                     img_url_list.append(image.attrs['src'])
 
-        # add to dictionary with format {title:[img_urls]}
-        promo_page_dict[title] = img_url_list
+        # filter past urls
+        filtered = [img_url for img_url in img_url_list if img_url not in past_url_list]
+        if filtered != []:
+            # add to dictionary with format {title:[img_urls]}
+            promo_page_dict[title] = img_url_list
 
     except Exception as ex:
         print('Exception in parsing promo page')
@@ -91,25 +96,25 @@ def parseMainPage(response):
 
         # print(response.html.find('title', first=True).text)
         
-        main = response.html.find('.td-ss-main-content')
+        # expect only 1 main frame
+        main = response.html.find('.td-ss-main-content', first=True)
         if main:    
-            # expect only 1 main frame
-            promos = main[0].xpath('//div[@class="td-block-span4"]')
+            # locate promos container 
+            promos = main.xpath('//div[@class="td-block-span4"]')
             # get all the promo pages
             for promo in promos:
                 # only interested in last link
                 link = promo.find('a')[-1]
                 # filter uninterested page
-                for keyword in FILTER_TITLE:
-                    if keyword in link.text.lower():
-                        promo_pages_list.append(link.attrs['href'])
+                filtered = next((link.attrs['href'] for keyword in FILTER_TITLE if keyword in link.text.lower()), None)
+                if filtered != None:
+                    promo_pages_list.append(filtered)
 
     except Exception as ex:
         print('Exception in parsing main page')
         raise ex
 
     return promo_pages_list
-
 
 
 def getSSPromos():
@@ -119,32 +124,32 @@ def getSSPromos():
 
     try:
         session = HTMLSession()
-        response = session.get(DBG_URL)
+        response = session.get(URL)
 
-        promo_list = []
+        promo_dict = {}
         past_url_list = []
         
         # toFile(DBG_FILENAME, req.content)
-        # content = fromFile(DBG_FILENAME)
+        # return 
 
         # retrieve last broadcasted data
-        # past_data_list = getSSDict()
         past_url_list = jsonutil.readLastUrl(COM_ID)
 
         promo_pages = parseMainPage(response)
         for page_url in promo_pages:
-            # print(key + ':  ' + allpromos[key])
             response = session.get(page_url)
-            promo_list.append(parsePromoPage(response, past_url_list))
-
-        # toFile(DBG_FILENAME2, response.content)
+            url_dict = parsePromoPage(response, past_url_list)
+            if url_dict != {}:
+                promo_dict.update(url_dict)
+                
         # promo = parsePromoPage(response)      
         # promo_list.append(promo)
 
-        # promo_list = [{'page1': ['url1', 'url2']}, {'page2' : ['url1', 'url2']}]
-
+        # don't care about page title, flatten the urls
+        flat_list = [url for urls in list(promo_dict.values()) for url in urls]
         # save data to prevent re-broadcast if promo has not been updated
-        jsonutil.saveTodayUrl(date.today(), COM_ID, promo_list)
+        if flat_list != []:
+            jsonutil.saveTodayUrl(date.today(), COM_ID, flat_list)
 
     except Exception as ex:
         print(str(ex))
@@ -152,7 +157,8 @@ def getSSPromos():
         if session:
             session.close()
             
-    return promo_list
+    return promo_dict
+
 
 if __name__ == "__main__":
     getSSPromos()
