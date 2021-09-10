@@ -48,9 +48,15 @@ def jsonAppend(date, com_id, url_list, existing_data):
 
     # same date, append
     if(existing_data[-1]['date'] == str(date)):
-        list = existing_data[-1]['promo'][com_id]
-        list.extend(url_list)
-        existing_data[-1]['promo'].update(promoTemplate(com_id, list))
+        if com_id in existing_data[-1]['promo']:
+            # com_id exists, append url
+            list = existing_data[-1]['promo'][com_id]
+            list.extend(url_list)
+            existing_data[-1]['promo'].update(promoTemplate(com_id, list))
+        else:
+            # todo: com_id does not exist, append to date
+            dict = existing_data[-1]['promo']
+            existing_data[-1]['promo'].update(promoTemplate(com_id, url_list))
     else:  
         json_data = fullTemplate(date, com_id, url_list)
         existing_data.extend(json_data)
@@ -111,8 +117,14 @@ def readLastUrl(com_id):
         try:
             with open(JSON_FILE) as file:
                 data = json.load(file)
-            
-            list = data[-1]['promo'][com_id]
+
+            ctr = 0
+            for idx in range(len(data)-1, -1, -1):
+                if com_id in data[idx]['promo']:
+                    list.extend(data[idx]['promo'][com_id])
+                    ctr += 1
+                    if ctr == 5:
+                        break
 
         except Exception as ex:
             print('Exception while getting json past url')

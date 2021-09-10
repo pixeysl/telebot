@@ -25,7 +25,7 @@ def dispatch_promos(bot, promo_dict):
     # in every promo page
     for promo_page in promo_dict.keys():        
         # send the tile and the flyer url
-        bot.send_message(chat_id=credential.CHAT_ID, text=promo_dict[promo_page])
+        bot.send_message(chat_id=credential.CHAT_ID, text=promo_page)
         # print(promo_dict[promo_page])
         # send all image url in page
         for img_url in promo_dict[promo_page]:

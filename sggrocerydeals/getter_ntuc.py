@@ -70,10 +70,11 @@ def parseMainPage(response):
             # get all the promo pages
             for promo in promos:
                 # only interested in last link
-                link = promo.find('a', )[-1]
+                link = promo.find('a')[-1]
                 # print(link.attrs['href'])
 
                 title = promo.find('strong', first=True)
+                # title = promo.find('p', first=True)
                 # print(title.text)
 
                 # filter uninterested page
@@ -94,17 +95,17 @@ def getNTUCPromos():
     json_data = None
 
     try:
-        session = HTMLSession()
-        response = session.get(URL)
-
         promo_dict = {}
         past_url_list = []
         
-        # toFile(DBG_FILENAME, response.content)
-        # return
-        
         # retrieve last broadcasted data
         past_url_list = jsonutil.readLastUrl(COM_ID)
+
+        session = HTMLSession()
+        response = session.get(URL)
+
+        # toFile(DBG_FILENAME, response.content)
+        # return
 
         promo_pages = parseMainPage(response)
         for page_url in promo_pages:
@@ -128,7 +129,6 @@ def getNTUCPromos():
         if session:
             session.close()
 
-    print(promo_dict)
     return promo_dict
 
 

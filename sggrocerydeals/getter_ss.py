@@ -7,7 +7,7 @@ URL =  'https://corporate.shengsiong.com.sg/category/promotions/'
 # company id
 COM_ID = 'ss'
 # list of promo title to match and ignore the rest
-FILTER_TITLE = ['special', 'fair']
+FILTER_TITLE = ['special', 'monthly', 'fair']
 
 DBG_FILENAME = 'index.html'
 DBG_FILENAME2 = 'index1.html'
@@ -45,6 +45,8 @@ def parsePromoPage(response, past_url_list):
         if main:    
             # locate image container
             blocks = main.xpath('//div[@class="wp-block-image"]')
+            if blocks == []:
+                blocks = main.xpath('//figure[@class="wp-block-image size-full"]')
             # get all the promo image
             for block in blocks:
                 images = block.xpath('//img')
@@ -121,19 +123,20 @@ def getSSPromos():
 
     session = None
     json_data = None
+    flat_list = []
 
     try:
-        session = HTMLSession()
-        response = session.get(URL)
-
         promo_dict = {}
         past_url_list = []
-        
-        # toFile(DBG_FILENAME, req.content)
-        # return 
 
         # retrieve last broadcasted data
         past_url_list = jsonutil.readLastUrl(COM_ID)
+
+        session = HTMLSession()
+        response = session.get(URL)
+
+        # toFile(DBG_FILENAME, req.content)
+        # return 
 
         promo_pages = parseMainPage(response)
         for page_url in promo_pages:
