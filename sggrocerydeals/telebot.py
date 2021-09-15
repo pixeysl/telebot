@@ -30,7 +30,10 @@ def dispatch_promos(bot, promo_dict):
         # send all image url in page
         for img_url in promo_dict[promo_page]:
             # print(img_url)
-            bot.send_photo(chat_id=credential.CHAT_ID, photo=img_url)
+            if img_url.endswith('pdf'):
+                bot.send_message(chat_id=credential.CHAT_ID, text=img_url)
+            else:
+                bot.send_photo(chat_id=credential.CHAT_ID, photo=img_url)
             # delay before sending next
             time.sleep(1)
 
@@ -43,8 +46,8 @@ def main():
     # test()
 
     # query all SS the promos
-    promo_list = ss.getSSPromos()
-    dispatch_promos(bot, promo_list)
+    promo_dict = ss.getSSPromos()
+    dispatch_promos(bot, promo_dict)
 
     # query all NTUC the promos
     promo_dict = ntuc.getNTUCPromos()
