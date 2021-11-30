@@ -7,7 +7,7 @@ URL =  'https://corporate.shengsiong.com.sg/category/promotions/'
 # company id
 COM_ID = 'ss'
 # list of promo title to match and ignore the rest
-FILTER_TITLE = ['special', 'monthly', 'fair']
+FILTER_TITLE = ['special', 'monthly', 'fair', 'promotion']
 
 DBG_FILENAME = 'index.html'
 DBG_FILENAME2 = 'index1.html'
