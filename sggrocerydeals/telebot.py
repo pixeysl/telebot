@@ -34,7 +34,7 @@ def dispatch_promos(bot, promo_dict):
                 bot.send_message(chat_id=credential.CHAT_ID, text=img_url)
             else:
                 img_url += "?&random=64" # https://stackoverflow.com/questions/49645510/telegram-bot-send-photo-by-url-returns-bad-request-wrong-file-identifier-http/62672868#62672868
-                bot.send_photo(chat_id=credential.CHAT_ID, photo=img_url + "&random=64")
+                bot.send_photo(chat_id=credential.CHAT_ID, photo=img_url)
             # delay before sending next
             time.sleep(1)
 
