@@ -8,10 +8,9 @@ URL =  BASE_URL + '/store-weekly-ads/'
 # company id
 COM_ID = 'ntuc'
 # list of promo title to match and ignore the rest
-FILTER_TITLE = ['4 Days Only!', 'Must Buy', 'Your Weekly Saver', 'Fresh Picks', 'Fresh Must Buys']
+FILTER_TITLE = ['4 Days Only!', 'Must Buy', 'Your Weekly Saver', 'Fresh Picks', 'Fresh Must Buys', 'Freshness']
 
 DBG_FILENAME = 'index.html'
-DBG_FILENAME2 = 'index1.html'
 DBG_URL = 'http://localhost:80/'
 # DBG_URL = 'https://www.fairprice.com.sg/store-weekly-ads/weekly-saver/'
 
@@ -69,7 +68,11 @@ def parseMainPage(response):
             # get all the promo pages
             for promo in promos:
                 # only interested in last link
-                link = promo.find('a')[-1]
+                links = promo.find('a')
+                if links:
+                    link = links[-1]
+                else:
+                    continue
                 rel_link = link.attrs['href'].replace(BASE_URL, '')
                 # print(link.attrs['href'])
 
