@@ -3,8 +3,8 @@ from requests_html import HTMLSession
 from datetime import date
 
 # flyer page url
-BASE_URL = 'https://www.fairprice.com.sg'
-URL =  BASE_URL + '/store-weekly-ads/'
+BASE_URL = 'https://promotions.fairprice.com.sg'
+URL =  'https://www.fairprice.com.sg/store-weekly-ads/'
 # company id
 COM_ID = 'ntuc'
 # list of promo title to match and ignore the rest
@@ -13,6 +13,9 @@ FILTER_TITLE = ['4 Days Only!', 'Must Buy', 'Weekly Savers', 'Fresh Picks', 'Fre
 DBG_FILENAME = 'index.html'
 DBG_URL = 'http://localhost:80/'
 # DBG_URL = 'https://www.fairprice.com.sg/store-weekly-ads/weekly-saver/'
+
+glblsession = None
+
 
 def toFile(filename, content):
     filename = jsonutil.WORKING_DIR + '\\' + filename
@@ -25,34 +28,76 @@ def fromFile(filename):
     return content
 
 
+def getHTMLSession():
+    global glblsession
+    if glblsession == None:
+        glblsession = HTMLSession()
+    return glblsession
+
+def closeHTMLSession():
+    global glblsession
+    if glblsession:
+        glblsession.close()
+
+
+def getImageUrl(response):
+    # expect only 1 main page
+    main_image = response.html.find('#print_current_page', first=True)
+    if main_image:
+        # locate image container
+        images = main_image.xpath('//img')
+        if len(images) == 1:
+            return images[0].attrs['src']
+        raise Exception('unexpected image list length, please check')
+
+
 def parsePromoPage(response, title, past_url_list):
-# <div class="wp-block-image">
-#     <figure class="aligncenter size-large">
-#         <img alt="" data-src="https://shengsiongcontent.s3.ap-southeast-1.amazonaws.com/wp-content/uploads/2021/07/12174027/7M21Booklet-F-02-1024x727.jpg" class="wp-image-6395 lazyloaded" src="https://shengsiongcontent.s3.ap-southeast-1.amazonaws.com/wp-content/uploads/2021/07/12174027/7M21Booklet-F-02-1024x727.jpg">
-#             <noscript>
-#                 <img src="https://shengsiongcontent.s3.ap-southeast-1.amazonaws.com/wp-content/uploads/2021/07/12174027/7M21Booklet-F-02-1024x727.jpg" alt="" class="wp-image-6395"/>
-#             </noscript>
-#         </figure>
-#     </div>
+# <div id="print_current_page" class="single">
+#     <img src="/91990/1694121/pages/85db28e0-ca52-41cf-a22b-2648bbe718a1-at600.jpg">
+# </div>
+
+# <div class="chrome">
+#   <a id="next_slide" class="navButton" aria-label="Next page" role="button" href="https://promotions.fairprice.com.sg/price-drop-buy-now-must-buy/page/2" tabindex="0" aria-hidden="false"></a>
+#   <div id="progress_indicator"><a href="" class="first-page disabled" aria-label="Skip to the first page" tabindex="-1" aria-hidden="true"></a>
+#   <span class="current-page" aria-label="Current page position is 1 of 2"><span class="page-numbers">1</span><span class="separator">/</span>
+#   <span class="total">2</span></span><a href="" class="last-page" aria-label="Skip to the last page" tabindex="0" aria-hidden="false"></a>
+# </div><div class="current_page_label" aria-live="assertive">Price Drop Buy Now - Must Buy - page 1</div></div>
+
+# <div class="chrome">
+#   <a id="next_slide" class="navButton disabled" aria-label="Next page" role="button" href="" tabindex="-1" aria-hidden="true"></a>
+#   <div id="progress_indicator"><a href="" class="first-page" aria-label="Skip to the first page" tabindex="0" aria-hidden="false"></a>
+#   <span class="current-page" aria-label="Current page position is 2 of 2"><span class="page-numbers">2</span><span class="separator">/</span>
+#   <span class="total">2</span></span><a href="" class="last-page disabled" aria-label="Skip to the last page" tabindex="-1" aria-hidden="true"></a>
+# </div><div class="current_page_label" aria-live="assertive">Price Drop Buy Now - Must Buy - page 2</div></div>
+
     promo_page_dict = {}
+    image_list = []
 
+    while True:
+        image_url = getImageUrl(response)
+        if image_url != "":
+            image_list.append(image_url)
+
+        # check if there's a next page
+        next_page = response.html.find('#next_slide', first=True)
+        next_page_url = next_page.attrs['href']
+        if next_page_url != "":
+            session = getHTMLSession()
+            response = session.get(next_page_url)
+            response.html.render() # render .js
+        else:
+            break
+
+    # filter past urls
     try:
-
-        # expect only 1 main frame
-        main = response.html.find('.tp-summary-info', first=True)
-        if main:    
-            # locate image container
-            images = main.xpath('//img')
-            # filter past urls
-            filtered = [image.attrs['src'] for image in images if image.attrs['src'] not in past_url_list]
-            if filtered != []:
-                # add to dictionary with format {title:[img_urls]}
-                promo_page_dict[title] = filtered
-
+        filtered = [BASE_URL + image for image in image_list if BASE_URL + image not in past_url_list]
+        if filtered != []:
+            # add to dictionary with format {title:[img_urls]}
+            promo_page_dict[title] = filtered
     except Exception as ex:
         print('Exception in parsing promo page')
         print(str(ex))
-    
+        
     return promo_page_dict
 
 
@@ -60,7 +105,6 @@ def parseMainPage(response):
     promo_page_dict = {}
 
     try:
-
         containers = response.html.xpath('//div[@class="vc_row wpb_row vc_row-fluid vc_row-o-equal-height vc_row-flex"]')
         for container in containers[:3]:
             # locate promo container
@@ -94,7 +138,6 @@ def parseMainPage(response):
 
 def getNTUCPromos():
 
-    session = None
     json_data = None
 
     try:
@@ -104,7 +147,7 @@ def getNTUCPromos():
         # retrieve last broadcasted data
         past_url_list = jsonutil.readLastUrl(COM_ID)
 
-        session = HTMLSession()
+        session = getHTMLSession()
         response = session.get(URL)
 
         # toFile(DBG_FILENAME, response.content)
@@ -113,6 +156,7 @@ def getNTUCPromos():
         promo_pages = parseMainPage(response)
         for key in promo_pages.keys():
             response = session.get(promo_pages[key])
+            response.html.render() # render .js
             url_dict = parsePromoPage(response, key, past_url_list)
             if url_dict != {}:
                 promo_dict.update(url_dict)
@@ -129,8 +173,7 @@ def getNTUCPromos():
     except Exception as ex:
         print(str(ex))
     finally:
-        if session:
-            session.close()
+        closeHTMLSession()
 
     return promo_dict
 
