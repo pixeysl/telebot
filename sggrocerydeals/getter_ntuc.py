@@ -8,7 +8,7 @@ URL =  BASE_URL + '/store-weekly-ads/'
 # company id
 COM_ID = 'ntuc'
 # list of promo title to match and ignore the rest
-FILTER_TITLE = ['4 Days Only!', 'Must Buy', 'Your Weekly Saver', 'Fresh Picks', 'Fresh Must Buys', 'Freshness']
+FILTER_TITLE = ['4 Days Only!', 'Must Buy', 'Weekly Savers', 'Fresh Picks', 'Fresh Buys', 'Neighbourhood']
 
 DBG_FILENAME = 'index.html'
 DBG_URL = 'http://localhost:80/'

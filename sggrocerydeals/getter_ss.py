@@ -55,7 +55,7 @@ def parsePromoPage(response, past_url_list):
                 if image:
                     img_url_list.append(image.attrs['src'])
             # locate pdf button
-            block = main.xpath('//div[@class="wp-block-buttons aligncenter"]')[0]
+            block = main.xpath('//div[@class="wp-block-button aligncenter"]')[0]
             pdf = block.find('a', first=True)
             if pdf:
                 img_url_list.append(pdf.attrs['href'])

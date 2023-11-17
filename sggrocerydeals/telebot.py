@@ -19,11 +19,11 @@ def test(bot):
 def dispatch_promos(bot, promo_dict):
     '''
     bot -- telegram bot instance
-    promo_dict -- dictionary of promos {title: [url]}    
+    promo_dict -- dictionary of promos {title: [url]}
     '''
 
     # in every promo page
-    for promo_page in promo_dict.keys():        
+    for promo_page in promo_dict.keys():
         # send the tile and the flyer url
         bot.send_message(chat_id=credential.CHAT_ID, text=promo_page)
         # print(promo_dict[promo_page])
@@ -33,8 +33,11 @@ def dispatch_promos(bot, promo_dict):
             if img_url.endswith('pdf'):
                 bot.send_message(chat_id=credential.CHAT_ID, text=img_url)
             else:
-                img_url += "?&random=64" # https://stackoverflow.com/questions/49645510/telegram-bot-send-photo-by-url-returns-bad-request-wrong-file-identifier-http/62672868#62672868
-                bot.send_photo(chat_id=credential.CHAT_ID, photo=img_url)
+                try:
+                    #img_url += "?&random=64" # https://stackoverflow.com/questions/49645510/telegram-bot-send-photo-by-url-returns-bad-request-wrong-file-identifier-http/62672868#62672868
+                    bot.send_photo(chat_id=credential.CHAT_ID, photo=img_url)
+                except Exception as ex:
+                    print(str(ex))
             # delay before sending next
             time.sleep(1)
 
