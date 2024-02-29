@@ -4,11 +4,11 @@ from datetime import date
 
 # flyer page url
 BASE_URL = 'https://promotions.fairprice.com.sg'
-URL =  'https://www.fairprice.com.sg/store-weekly-ads/'
+URL =  'https://www.fairprice.com.sg/weekly-promotions/'
 # company id
 COM_ID = 'ntuc'
 # list of promo title to match and ignore the rest
-FILTER_TITLE = ['4 Days Only!', 'Must Buy', 'Weekly Savers', 'Fresh Picks', 'Fresh Buys', 'Neighbourhood']
+FILTER_TITLE = ['Celebrate', '4 Days Only!', 'Must Buy', 'Weekly Savers', 'Fresh Picks', 'Fresh Buys', 'Neighbourhood', 'Specials']
 
 DBG_FILENAME = 'index.html'
 DBG_URL = 'http://localhost:80/'
@@ -76,6 +76,7 @@ def parsePromoPage(response, title, past_url_list):
     while True:
         image_url = getImageUrl(response)
         if image_url != "":
+            image_url = image_url.replace("-at600", "-at1000")
             image_list.append(image_url)
 
         # check if there's a next page
@@ -90,14 +91,14 @@ def parsePromoPage(response, title, past_url_list):
 
     # filter past urls
     try:
-        filtered = [BASE_URL + image for image in image_list if BASE_URL + image not in past_url_list]
+        filtered = [BASE_URL + image_url for image_url in image_list if BASE_URL + image_url not in past_url_list]
         if filtered != []:
             # add to dictionary with format {title:[img_urls]}
             promo_page_dict[title] = filtered
     except Exception as ex:
         print('Exception in parsing promo page')
         print(str(ex))
-        
+
     return promo_page_dict
 
 
@@ -149,6 +150,7 @@ def getNTUCPromos():
 
         session = getHTMLSession()
         response = session.get(URL)
+        response.html.render() # render .js
 
         # toFile(DBG_FILENAME, response.content)
         # return
