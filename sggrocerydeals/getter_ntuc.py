@@ -42,7 +42,7 @@ def closeHTMLSession():
 
 def getImageUrl(response):
     # expect only 1 main page
-    main_image = response.html.find('#print_current_page', first=True)
+    main_image = response.html.xpath('//div[@id="print_current_page"]', first=True)
     if main_image:
         # locate image container
         images = main_image.xpath('//img')
@@ -76,6 +76,7 @@ def parsePromoPage(response, title, past_url_list):
     while True:
         image_url = getImageUrl(response)
         if image_url != "":
+            # replace with higher res image url
             image_url = image_url.replace("-at600", "-at1000")
             image_list.append(image_url)
 
@@ -106,29 +107,28 @@ def parseMainPage(response):
     promo_page_dict = {}
 
     try:
-        containers = response.html.xpath('//div[@class="vc_row wpb_row vc_row-fluid vc_row-o-equal-height vc_row-flex"]')
-        for container in containers[:3]:
-            # locate promo container
-            promos = container.xpath('//div[@class="wpb_column vc_column_container vc_col-sm-3 vc_col-lg-3 vc_col-md-6 vc_col-xs-6"]')
-            # get all the promo pages
-            for promo in promos:
-                # only interested in last link
-                links = promo.find('a')
-                if links:
-                    link = links[-1]
-                else:
-                    continue
-                rel_link = link.attrs['href'].replace(BASE_URL, '')
-                # print(link.attrs['href'])
+        # locate promo container
+        container = response.html.xpath('//ul[@class="sc-43263988-0 etUCvI"]', first=True)
+        # locate promo pages
+        promos = container.xpath('//li[@class="sc-70112128-0 iRgrLZ"]')
+        # get individual promo page
+        for promo in promos:
+            # only interested in last link
+            links = promo.find('a', first=True)
+            if links:
+                link = links.attrs['href']
+            else:
+                continue
+            # print(links.attrs['href'])
 
-                # title = promo.find('strong', first=True)
-                title = promo.find('p', first=True)
-                # print(title.text)
+            titles = promo.find('p')
+            title = titles[0].text + '\n' + titles[1].text
+            # print(title)
 
-                # filter uninterested page
-                filtered = next((BASE_URL + rel_link for keyword in FILTER_TITLE if keyword in title.text), None)
-                if filtered != None:
-                    promo_page_dict[title.text] = filtered
+            # filter uninterested page
+            filtered = next((link for keyword in FILTER_TITLE if keyword in title), None)
+            if filtered != None:
+                promo_page_dict[title] = filtered
 
     except Exception as ex:
         print('Exception in parsing main page')
