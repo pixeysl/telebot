@@ -1,4 +1,4 @@
-from telegram.bot import Bot
+import telegram
 import credential
 import getter_ss as ss
 import getter_ntuc as ntuc
@@ -45,7 +45,7 @@ def main():
     # how to find channel-id https://gist.github.com/mraaroncruz/e76d19f7d61d59419002db54030ebe35
 
     # get the bot instance
-    bot = Bot(token=credential.TOKEN_KEY)
+    bot = telegram.Bot(token=credential.TOKEN_KEY)
 
     # test()
 
