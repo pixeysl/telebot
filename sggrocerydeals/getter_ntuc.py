@@ -108,9 +108,9 @@ def parseMainPage(response):
 
     try:
         # locate promo container
-        container = response.html.xpath('//ul[@class="sc-e79d1db7-0 eqfXC"]', first=True)
+        container = response.html.xpath('//ul[@class="sc-e79d1db7-0 cvVHrC"]', first=True)
         # locate promo pages
-        promos = container.xpath('//li[@class="sc-70112128-0 iRgrLZ"]')
+        promos = container.xpath('//li[@class="sc-70112128-0 fRTQfd"]')
         # get individual promo page
         for promo in promos:
             # only interested in last link
