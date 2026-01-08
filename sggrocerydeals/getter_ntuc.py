@@ -78,12 +78,14 @@ def parsePromoPage(response, title, past_url_list):
         if image_url != "":
             # replace with higher res image url
             image_url = image_url.replace("-at600", "-at1000")
+            if image_url in image_list:
+                break # a case where the last page has a next arrow that loops back to first page
             image_list.append(image_url)
 
         # check if there's a next page
         next_page = response.html.find('#next_slide', first=True)
         next_page_url = next_page.attrs['href']
-        if next_page_url != "":
+        if next_page_url != '':
             session = getHTMLSession()
             response = session.get(next_page_url)
             response.html.render() # render .js
