@@ -1,5 +1,5 @@
 import jsonutil
-from requests_html import HTMLSession
+from requests_html import AsyncHTMLSession
 from datetime import date
 
 # flyer page url
@@ -31,13 +31,13 @@ def fromFile(filename):
 def getHTMLSession():
     global glblsession
     if glblsession == None:
-        glblsession = HTMLSession()
+        glblsession = AsyncHTMLSession()
     return glblsession
 
-def closeHTMLSession():
+async def closeHTMLSession():
     global glblsession
     if glblsession:
-        glblsession.close()
+        await glblsession.close()
 
 
 def getImageUrl(response):
@@ -51,7 +51,7 @@ def getImageUrl(response):
         raise Exception('unexpected image list length, please check')
 
 
-def parsePromoPage(response, title, past_url_list):
+async def parsePromoPage(response, title, past_url_list):
 # <div id="print_current_page" class="single">
 #     <img src="/91990/1694121/pages/85db28e0-ca52-41cf-a22b-2648bbe718a1-at600.jpg">
 # </div>
@@ -87,8 +87,8 @@ def parsePromoPage(response, title, past_url_list):
         next_page_url = next_page.attrs['href']
         if next_page_url != '':
             session = getHTMLSession()
-            response = session.get(next_page_url)
-            response.html.render() # render .js
+            response = await session.get(next_page_url)
+            await response.html.arender() # render .js
         else:
             break
 
@@ -139,7 +139,7 @@ def parseMainPage(response):
     return promo_page_dict
 
 
-def getNTUCPromos():
+async def getNTUCPromos():
 
     json_data = None
 
@@ -151,17 +151,17 @@ def getNTUCPromos():
         past_url_list = jsonutil.readLastUrl(COM_ID)
 
         session = getHTMLSession()
-        response = session.get(URL)
-        response.html.render() # render .js
+        response = await session.get(URL)
+        await response.html.arender() # render .js
 
         # toFile(DBG_FILENAME, response.content)
         # return
 
         promo_pages = parseMainPage(response)
         for key in promo_pages.keys():
-            response = session.get(promo_pages[key])
-            response.html.render() # render .js
-            url_dict = parsePromoPage(response, key, past_url_list)
+            response = await session.get(promo_pages[key])
+            await response.html.arender() # render .js
+            url_dict = await parsePromoPage(response, key, past_url_list)
             if url_dict != {}:
                 promo_dict.update(url_dict)
 

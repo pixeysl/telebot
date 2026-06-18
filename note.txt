@@ -1,0 +1,4 @@
+Error Chromium downloadable not found at ...
+1. Get the chromium version from the website https://chromium.woolyss.com/download/.
+2. Modify the value of variable chromium_revisionin[python path]/Lib/site-packages/pyppeteer/init.py, __chromium_revision__ = '1265049'.
+3. Save and re-run the pyppeteer related script to automatically download and install chromium.
